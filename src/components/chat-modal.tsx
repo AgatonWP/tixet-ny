@@ -39,6 +39,7 @@ import { useUnreadMessages } from '@/lib/unread-messages';
 import { ReportModal } from '@/components/report-modal';
 import { RatingModal } from '@/components/rating-modal';
 import { blockUser, getBlockStatus, unblockUser } from '@/lib/blocking';
+import { clearDraft, linkDraftKey, readDraft, saveDraft } from '@/lib/chat-drafts';
 import { fetchSellerSwishNumber } from '@/lib/payment-details';
 
 type Props = {
@@ -75,6 +76,19 @@ export function ChatModal({ listing, conversationId, onClose, onListingSold }: P
   const [ratingListing, setRatingListing] = useState<Listing | null>(null);
   const listRef = useRef<FlatList>(null);
   const screenTranslateX = useRef(new Animated.Value(0)).current;
+  const draftKey = conversationId ?? listing?.id ?? null;
+
+  useEffect(() => {
+    setDraft(draftKey ? readDraft(draftKey) : '');
+  }, [draftKey]);
+
+  const handleDraftChange = useCallback(
+    (value: string) => {
+      setDraft(value);
+      if (draftKey) saveDraft(draftKey, value);
+    },
+    [draftKey],
+  );
 
   useEffect(() => {
     screenTranslateX.setValue(0);
@@ -121,6 +135,7 @@ export function ChatModal({ listing, conversationId, onClose, onListingSold }: P
     load
       .then(async (conv) => {
         if (!active) return;
+        if (draftKey) linkDraftKey(draftKey, conv.id);
         setConversation(conv);
         const msgs = await fetchMessages(conv.id, user.id);
         if (!active) return;
@@ -138,7 +153,7 @@ export function ChatModal({ listing, conversationId, onClose, onListingSold }: P
     return () => {
       active = false;
     };
-  }, [listing, conversationId, user, markConversationRead]);
+  }, [listing, conversationId, draftKey, user, markConversationRead]);
 
   useEffect(() => {
     if (!conversation || !user) {
@@ -214,13 +229,14 @@ export function ChatModal({ listing, conversationId, onClose, onListingSold }: P
     try {
       const message = await sendMessage(conversation.id, user.id, text);
       setDraft('');
+      if (draftKey) clearDraft(draftKey);
       setMessages((current) => (current.some((m) => m.id === message.id) ? current : [...current, message]));
     } catch (error) {
       setSendError(error instanceof Error ? error.message : 'Kunde inte skicka meddelandet.');
     } finally {
       setSending(false);
     }
-  }, [conversation, user, draft, sending]);
+  }, [conversation, user, draft, draftKey, sending]);
 
   const handleCopySwishNumber = useCallback(async () => {
     if (!sellerSwishNumber) return;
@@ -548,7 +564,7 @@ export function ChatModal({ listing, conversationId, onClose, onListingSold }: P
               <View style={styles.inputRow}>
                 <TextInput
                   value={draft}
-                  onChangeText={setDraft}
+                  onChangeText={handleDraftChange}
                   placeholder="Skriv ett meddelande..."
                   placeholderTextColor={theme.textSecondary}
                   multiline
