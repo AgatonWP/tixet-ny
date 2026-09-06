@@ -27,6 +27,8 @@ import {
   restoreListingActive,
 } from '@/lib/tickets';
 
+const MAX_DISPLAY_NAME_LENGTH = 25;
+
 export default function ProfileScreen() {
   const safeAreaInsets = useSafeAreaInsets();
   const theme = useTheme();
@@ -38,6 +40,8 @@ export default function ProfileScreen() {
   const [submitting, setSubmitting] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
   const [confirmationEmailSent, setConfirmationEmailSent] = useState(false);
+  const [signupFullName, setSignupFullName] = useState('');
+  const [signupPhone, setSignupPhone] = useState('');
   const [listings, setListings] = useState<Listing[]>([]);
   const [listingsLoading, setListingsLoading] = useState(false);
   const [listingsError, setListingsError] = useState<string | null>(null);
@@ -148,10 +152,17 @@ export default function ProfileScreen() {
       if (mode === 'signin') {
         await signIn(email.trim(), password);
       } else {
-        const { needsEmailConfirmation } = await signUp(email.trim(), password);
+        const { needsEmailConfirmation } = await signUp(email.trim(), password, {
+          fullName: signupFullName.trim(),
+          phoneNumber: signupPhone.trim(),
+        });
+
         if (needsEmailConfirmation) {
           setConfirmationEmailSent(true);
         }
+
+        setSignupFullName('');
+        setSignupPhone('');
       }
       setPassword('');
     } catch (error) {
@@ -367,6 +378,8 @@ export default function ProfileScreen() {
                     setMode(mode === 'signin' ? 'signup' : 'signin');
                     setAuthError(null);
                     setConfirmationEmailSent(false);
+                    setSignupFullName('');
+                    setSignupPhone('');
                   }}>
                   <ThemedText style={styles.authSwitch}>
                     {mode === 'signin' ? t('signUp') : t('signIn')}
@@ -416,6 +429,33 @@ export default function ProfileScreen() {
                 ]}
                 value={password}
               />
+
+              {mode === 'signup' && (
+                <>
+                  <TextInput
+                    maxLength={MAX_DISPLAY_NAME_LENGTH}
+                    onChangeText={(text) => setSignupFullName(text.replace(/[^\p{L}\s]/gu, ''))}
+                    placeholder={t('displayNameOptionalPlaceholder')}
+                    placeholderTextColor={theme.textSecondary}
+                    style={[
+                      styles.input,
+                      { backgroundColor: theme.background, borderColor: theme.backgroundSelected, color: theme.text },
+                    ]}
+                    value={signupFullName}
+                  />
+                  <TextInput
+                    keyboardType="phone-pad"
+                    onChangeText={(text) => setSignupPhone(text.replace(/[^\d\s+-]/g, ''))}
+                    placeholder={t('phoneNumberOptionalPlaceholder')}
+                    placeholderTextColor={theme.textSecondary}
+                    style={[
+                      styles.input,
+                      { backgroundColor: theme.background, borderColor: theme.backgroundSelected, color: theme.text },
+                    ]}
+                    value={signupPhone}
+                  />
+                </>
+              )}
 
               {authError && <ThemedText style={styles.errorText}>{authError}</ThemedText>}
 

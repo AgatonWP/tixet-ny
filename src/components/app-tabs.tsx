@@ -1,5 +1,6 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { Tabs } from 'expo-router';
+import { Text } from 'react-native';
 
 import { Colors } from '@/constants/theme';
 import { useI18n } from '@/lib/i18n';
@@ -31,8 +32,8 @@ export default function AppTabs() {
         name="index"
         options={{
           title: t('buy'),
-          tabBarIcon: ({ color, focused, size }) => (
-            <Ionicons color={color} name={focused ? 'home' : 'home-outline'} size={size} />
+          tabBarIcon: ({ focused, size }) => (
+            <Text style={{ fontSize: size, opacity: focused ? 1 : 0.5 }}>🕺</Text>
           ),
         }}
       />

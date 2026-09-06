@@ -1,7 +1,7 @@
 import { Image } from 'expo-image';
 import { router } from 'expo-router';
-import { useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Switch, TextInput, View } from 'react-native';
+import { useEffect, useRef, useState } from 'react';
+import { ActivityIndicator, Alert, Animated, Pressable, ScrollView, StyleSheet, Switch, TextInput, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
@@ -29,17 +29,29 @@ export default function SettingsScreen() {
   const [avatarUrl, setAvatarUrl] = useState<string | null>(user?.user_metadata?.avatar_url ?? null);
   const [avatarUploading, setAvatarUploading] = useState(false);
   const [avatarError, setAvatarError] = useState<string | null>(null);
+  const [avatarToastVisible, setAvatarToastVisible] = useState(false);
+  const avatarToastOpacity = useRef(new Animated.Value(0)).current;
 
   const [fullName, setFullName] = useState(user?.user_metadata?.full_name ?? '');
   const [nameSaving, setNameSaving] = useState(false);
   const [nameError, setNameError] = useState<string | null>(null);
   const [nameSaved, setNameSaved] = useState(false);
 
+  const [phoneNumber, setPhoneNumber] = useState(user?.user_metadata?.phone_number ?? '');
+  const [phoneSaving, setPhoneSaving] = useState(false);
+  const [phoneError, setPhoneError] = useState<string | null>(null);
+  const [phoneSaved, setPhoneSaved] = useState(false);
+
   const [swishNumber, setSwishNumber] = useState(user?.user_metadata?.swish_number ?? '');
   const [swishSaving, setSwishSaving] = useState(false);
   const [swishError, setSwishError] = useState<string | null>(null);
   const [swishSaved, setSwishSaved] = useState(false);
   const [swishDeleting, setSwishDeleting] = useState(false);
+
+  const [newPassword, setNewPassword] = useState('');
+  const [passwordSaving, setPasswordSaving] = useState(false);
+  const [passwordError, setPasswordError] = useState<string | null>(null);
+  const [passwordSaved, setPasswordSaved] = useState(false);
 
   const [pushEnabled, setPushEnabled] = useState(false);
   const [pushLoading, setPushLoading] = useState(true);
@@ -52,6 +64,7 @@ export default function SettingsScreen() {
   useEffect(() => {
     setAvatarUrl(user?.user_metadata?.avatar_url ?? null);
     setFullName(user?.user_metadata?.full_name ?? '');
+    setPhoneNumber(user?.user_metadata?.phone_number ?? '');
   }, [user]);
 
   useEffect(() => {
@@ -85,6 +98,16 @@ export default function SettingsScreen() {
       .catch(() => setIsAdmin(false));
   }, [user]);
 
+  function showAvatarToast() {
+    setAvatarToastVisible(true);
+    avatarToastOpacity.setValue(0);
+    Animated.sequence([
+      Animated.timing(avatarToastOpacity, { toValue: 1, duration: 150, useNativeDriver: true }),
+      Animated.delay(1400),
+      Animated.timing(avatarToastOpacity, { toValue: 0, duration: 250, useNativeDriver: true }),
+    ]).start(() => setAvatarToastVisible(false));
+  }
+
   async function handleChangeAvatar() {
     if (!user || avatarUploading) return;
 
@@ -93,7 +116,10 @@ export default function SettingsScreen() {
 
     try {
       const url = await pickAndUploadAvatar(user.id);
-      if (url) setAvatarUrl(url);
+      if (url) {
+        setAvatarUrl(url);
+        showAvatarToast();
+      }
     } catch (error) {
       setAvatarError(error instanceof Error ? error.message : t('avatarChangeError'));
     } finally {
@@ -119,6 +145,45 @@ export default function SettingsScreen() {
       setNameError(error instanceof Error ? error.message : t('nameSaveError'));
     } finally {
       setNameSaving(false);
+    }
+  }
+
+  async function handleSavePhone() {
+    if (!user || phoneSaving) return;
+
+    setPhoneSaving(true);
+    setPhoneError(null);
+    setPhoneSaved(false);
+
+    try {
+      const { error } = await supabase.auth.updateUser({ data: { phone_number: phoneNumber.trim() } });
+
+      if (error) throw new Error(error.message);
+      setPhoneSaved(true);
+    } catch (error) {
+      setPhoneError(error instanceof Error ? error.message : t('phoneSaveError'));
+    } finally {
+      setPhoneSaving(false);
+    }
+  }
+
+  async function handleChangePassword() {
+    if (!user || passwordSaving || newPassword.length < 6) return;
+
+    setPasswordSaving(true);
+    setPasswordError(null);
+    setPasswordSaved(false);
+
+    try {
+      const { error } = await supabase.auth.updateUser({ password: newPassword });
+
+      if (error) throw new Error(error.message);
+      setPasswordSaved(true);
+      setNewPassword('');
+    } catch (error) {
+      setPasswordError(error instanceof Error ? error.message : t('passwordSaveError'));
+    } finally {
+      setPasswordSaving(false);
     }
   }
 
@@ -206,6 +271,16 @@ export default function SettingsScreen() {
 
   return (
     <ThemedView style={styles.screen}>
+      {avatarToastVisible && (
+        <Animated.View
+          pointerEvents="none"
+          style={[
+            styles.avatarToast,
+            { top: safeAreaInsets.top + 56 + Spacing.two, opacity: avatarToastOpacity, backgroundColor: theme.backgroundElement, borderColor: theme.backgroundSelected },
+          ]}>
+          <ThemedText style={styles.avatarToastText}>{t('avatarToastMessage')}</ThemedText>
+        </Animated.View>
+      )}
       <SafeAreaView edges={['top']} style={[styles.header, { borderBottomColor: theme.backgroundSelected, backgroundColor: theme.backgroundHeader }]}>
         <View style={styles.headerInner}>
           <Pressable onPress={() => router.back()} style={styles.backButton}>
@@ -262,7 +337,7 @@ export default function SettingsScreen() {
                   <TextInput
                     maxLength={MAX_DISPLAY_NAME_LENGTH}
                     onChangeText={(text) => {
-                      setFullName(text);
+                      setFullName(text.replace(/[^\p{L}\s]/gu, ''));
                       setNameSaved(false);
                     }}
                     placeholder={t('namePlaceholder')}
@@ -284,6 +359,38 @@ export default function SettingsScreen() {
                   </Pressable>
                 </View>
                 {nameError && <ThemedText style={styles.errorText}>{nameError}</ThemedText>}
+              </View>
+
+              <View style={styles.nameRow}>
+                <ThemedText type="smallBold" themeColor="textSecondary">
+                  {t('phoneNumberLabel')}
+                </ThemedText>
+                <View style={styles.nameInputRow}>
+                  <TextInput
+                    keyboardType="phone-pad"
+                    onChangeText={(text) => {
+                      setPhoneNumber(text.replace(/[^\d\s+-]/g, ''));
+                      setPhoneSaved(false);
+                    }}
+                    placeholder={t('phoneNumberPlaceholder')}
+                    placeholderTextColor={theme.textSecondary}
+                    style={[
+                      styles.input,
+                      styles.nameInput,
+                      { backgroundColor: theme.background, borderColor: theme.backgroundSelected, color: theme.text },
+                    ]}
+                    value={phoneNumber}
+                  />
+                  <Pressable
+                    disabled={phoneSaving}
+                    onPress={handleSavePhone}
+                    style={[styles.saveButton, { opacity: phoneSaving ? 0.55 : 1 }]}>
+                    <ThemedText style={styles.saveButtonText}>
+                      {phoneSaving ? t('savingLabel') : phoneSaved ? t('savedLabel') : t('saveNameButton')}
+                    </ThemedText>
+                  </Pressable>
+                </View>
+                {phoneError && <ThemedText style={styles.errorText}>{phoneError}</ThemedText>}
               </View>
 
               <View style={styles.nameRow}>
@@ -412,6 +519,48 @@ export default function SettingsScreen() {
           </View>
 
           <View style={styles.section}>
+            <ThemedText style={styles.sectionTitle}>{t('securitySection')}</ThemedText>
+
+            <View style={[styles.card, { backgroundColor: theme.backgroundElement, borderColor: theme.backgroundSelected }]}>
+              <View style={styles.nameRow}>
+                <ThemedText type="smallBold" themeColor="textSecondary">
+                  {t('newPasswordLabel')}
+                </ThemedText>
+                <View style={styles.nameInputRow}>
+                  <TextInput
+                    autoCapitalize="none"
+                    onChangeText={(text) => {
+                      setNewPassword(text);
+                      setPasswordSaved(false);
+                    }}
+                    placeholder={t('newPasswordPlaceholder')}
+                    placeholderTextColor={theme.textSecondary}
+                    secureTextEntry
+                    style={[
+                      styles.input,
+                      styles.nameInput,
+                      { backgroundColor: theme.background, borderColor: theme.backgroundSelected, color: theme.text },
+                    ]}
+                    value={newPassword}
+                  />
+                  <Pressable
+                    disabled={passwordSaving || newPassword.length < 6}
+                    onPress={handleChangePassword}
+                    style={[styles.saveButton, { opacity: passwordSaving || newPassword.length < 6 ? 0.55 : 1 }]}>
+                    <ThemedText style={styles.saveButtonText}>
+                      {passwordSaving ? t('savingLabel') : passwordSaved ? t('savedLabel') : t('saveNameButton')}
+                    </ThemedText>
+                  </Pressable>
+                </View>
+                <ThemedText type="small" themeColor="textSecondary">
+                  {t('newPasswordHint')}
+                </ThemedText>
+                {passwordError && <ThemedText style={styles.errorText}>{passwordError}</ThemedText>}
+              </View>
+            </View>
+          </View>
+
+          <View style={styles.section}>
             <ThemedText style={styles.sectionTitle}>{t('accountSection')}</ThemedText>
 
             <View style={[styles.card, { backgroundColor: theme.backgroundElement, borderColor: theme.backgroundSelected }]}>
@@ -481,6 +630,24 @@ function SegmentedControl<T extends string>({
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
+  },
+  avatarToast: {
+    alignSelf: 'center',
+    borderRadius: 999,
+    borderWidth: 1,
+    elevation: 4,
+    paddingHorizontal: Spacing.four,
+    paddingVertical: Spacing.two,
+    position: 'absolute',
+    shadowColor: '#1D2430',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 6,
+    zIndex: 10,
+  },
+  avatarToastText: {
+    fontSize: 14,
+    fontWeight: '800',
   },
   header: {
     borderBottomWidth: StyleSheet.hairlineWidth,

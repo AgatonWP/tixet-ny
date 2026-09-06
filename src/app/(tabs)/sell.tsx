@@ -14,6 +14,7 @@ import {
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { SingleDateCalendarModal } from '@/components/single-date-calendar-modal';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { MaxContentWidth, SecondaryHeaderHeight, Spacing } from '@/constants/theme';
@@ -609,15 +610,12 @@ export default function SellScreen() {
         onClose={() => setQuantityPickerOpen(false)}
       />
 
-      <SimplePickerModal
+      <SingleDateCalendarModal
         visible={eventDatePickerOpen}
-        title={t('ticketDate')}
-        options={eventDateOptions}
-        selectedId={eventDate}
-        onSelect={(id) => {
-          setEventDate(id);
-          setEventDatePickerOpen(false);
-        }}
+        selectedDate={eventDate || null}
+        minDateId={eventDateOptions[0]?.id}
+        maxDateId={eventDateOptions[eventDateOptions.length - 1]?.id}
+        onSelect={setEventDate}
         onClose={() => setEventDatePickerOpen(false)}
       />
 

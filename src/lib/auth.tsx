@@ -1,4 +1,5 @@
 import { Session, User } from '@supabase/supabase-js';
+import * as Linking from 'expo-linking';
 import { createContext, ReactNode, useContext, useEffect, useMemo, useState } from 'react';
 
 import { supabase } from '@/lib/supabase';
@@ -8,7 +9,11 @@ type AuthContextValue = {
   session: Session | null;
   user: User | null;
   signIn: (email: string, password: string) => Promise<void>;
-  signUp: (email: string, password: string) => Promise<{ needsEmailConfirmation: boolean }>;
+  signUp: (
+    email: string,
+    password: string,
+    profile?: { fullName?: string; phoneNumber?: string },
+  ) => Promise<{ userId: string; needsEmailConfirmation: boolean }>;
   signOut: () => Promise<void>;
 };
 
@@ -48,16 +53,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           throw new Error(error.message);
         }
       },
-      async signUp(email, password) {
-        const { data, error } = await supabase.auth.signUp({ email, password });
+      async signUp(email, password, profile) {
+        const { data, error } = await supabase.auth.signUp({
+          email,
+          password,
+          options: {
+            emailRedirectTo: Linking.createURL('/'),
+            data: {
+              full_name: profile?.fullName || undefined,
+              phone_number: profile?.phoneNumber || undefined,
+            },
+          },
+        });
 
         if (error) {
           throw new Error(error.message);
         }
+        if (!data.user) {
+          throw new Error('Kunde inte skapa kontot.');
+        }
 
         // With "Confirm email" enabled in Supabase, signUp succeeds but
         // returns no session until the user clicks the emailed link.
-        return { needsEmailConfirmation: !data.session };
+        return { userId: data.user.id, needsEmailConfirmation: !data.session };
       },
       async signOut() {
         const { error } = await supabase.auth.signOut();

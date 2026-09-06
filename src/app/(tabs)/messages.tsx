@@ -69,7 +69,7 @@ export default function MessagesScreen() {
             isSeller: conversation.sellerId === user.id,
           };
         })
-        .filter((item): item is InboxItem => item !== null)
+        .filter((item): item is InboxItem => item !== null && item.lastMessage !== null)
         .sort((a, b) => {
           const aTime = a.lastMessage?.sentAt.getTime() ?? a.conversation.createdAt.getTime();
           const bTime = b.lastMessage?.sentAt.getTime() ?? b.conversation.createdAt.getTime();
