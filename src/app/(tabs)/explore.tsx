@@ -14,6 +14,7 @@ import { BottomTabInset, MaxContentWidth, SecondaryHeaderHeight, Spacing } from 
 import { useTheme } from '@/hooks/use-theme';
 import { useAuth } from '@/lib/auth';
 import { useI18n } from '@/lib/i18n';
+import { saveOwnSwishNumber } from '@/lib/payment-details';
 import { Rating, RatingSummary, fetchOwnRatingsForListings, fetchRatingSummary } from '@/lib/ratings';
 import {
   Listing,
@@ -41,7 +42,7 @@ export default function ProfileScreen() {
   const [authError, setAuthError] = useState<string | null>(null);
   const [confirmationEmailSent, setConfirmationEmailSent] = useState(false);
   const [signupFullName, setSignupFullName] = useState('');
-  const [signupPhone, setSignupPhone] = useState('');
+  const [signupSwishNumber, setSignupSwishNumber] = useState('');
   const [listings, setListings] = useState<Listing[]>([]);
   const [listingsLoading, setListingsLoading] = useState(false);
   const [listingsError, setListingsError] = useState<string | null>(null);
@@ -152,17 +153,21 @@ export default function ProfileScreen() {
       if (mode === 'signin') {
         await signIn(email.trim(), password);
       } else {
-        const { needsEmailConfirmation } = await signUp(email.trim(), password, {
+        const { userId, needsEmailConfirmation } = await signUp(email.trim(), password, {
           fullName: signupFullName.trim(),
-          phoneNumber: signupPhone.trim(),
         });
 
         if (needsEmailConfirmation) {
           setConfirmationEmailSent(true);
+        } else if (signupSwishNumber.trim()) {
+          // No confirmation needed, so there's already a session to save with.
+          await saveOwnSwishNumber(userId, signupSwishNumber.trim()).catch(() => {
+            // Non-critical: the account still exists without it, can be added in Settings.
+          });
         }
 
         setSignupFullName('');
-        setSignupPhone('');
+        setSignupSwishNumber('');
       }
       setPassword('');
     } catch (error) {
@@ -379,7 +384,7 @@ export default function ProfileScreen() {
                     setAuthError(null);
                     setConfirmationEmailSent(false);
                     setSignupFullName('');
-                    setSignupPhone('');
+                    setSignupSwishNumber('');
                   }}>
                   <ThemedText style={styles.authSwitch}>
                     {mode === 'signin' ? t('signUp') : t('signIn')}
@@ -445,14 +450,14 @@ export default function ProfileScreen() {
                   />
                   <TextInput
                     keyboardType="phone-pad"
-                    onChangeText={(text) => setSignupPhone(text.replace(/[^\d\s+-]/g, ''))}
-                    placeholder={t('phoneNumberOptionalPlaceholder')}
+                    onChangeText={(text) => setSignupSwishNumber(text.replace(/[^\d\s+-]/g, ''))}
+                    placeholder={t('swishNumberOptionalPlaceholder')}
                     placeholderTextColor={theme.textSecondary}
                     style={[
                       styles.input,
                       { backgroundColor: theme.background, borderColor: theme.backgroundSelected, color: theme.text },
                     ]}
-                    value={signupPhone}
+                    value={signupSwishNumber}
                   />
                 </>
               )}

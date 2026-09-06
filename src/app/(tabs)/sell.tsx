@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useFocusEffect } from '@react-navigation/native';
 import { router } from 'expo-router';
 import {
   Animated,
@@ -72,6 +73,17 @@ export default function SellScreen() {
   const [submitted, setSubmitted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+
+  // Tab screens stay mounted when you switch away, so without this the
+  // "listing posted" screen would still be showing next time you come back
+  // to this tab, no matter how you left it.
+  useFocusEffect(
+    useCallback(() => {
+      return () => {
+        setSubmitted(false);
+      };
+    }, []),
+  );
 
   const selectedNation = nationId ? getNation(nationId) : null;
   const organizerName = nationId === 'other' ? customOrganizer.trim() : (selectedNation?.name ?? '');
@@ -223,7 +235,10 @@ export default function SellScreen() {
               onPostAnother={() => {
                 setSubmitted(false);
               }}
-              onGoHome={() => router.push('/')}
+              onGoHome={() => {
+                setSubmitted(false);
+                router.push('/');
+              }}
             />
           </ScrollView>
         </SafeAreaView>

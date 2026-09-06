@@ -12,7 +12,7 @@ type AuthContextValue = {
   signUp: (
     email: string,
     password: string,
-    profile?: { fullName?: string; phoneNumber?: string },
+    profile?: { fullName?: string },
   ) => Promise<{ userId: string; needsEmailConfirmation: boolean }>;
   signOut: () => Promise<void>;
 };
@@ -61,7 +61,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             emailRedirectTo: Linking.createURL('auth-redirect'),
             data: {
               full_name: profile?.fullName || undefined,
-              phone_number: profile?.phoneNumber || undefined,
             },
           },
         });

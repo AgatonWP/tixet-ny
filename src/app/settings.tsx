@@ -37,11 +37,6 @@ export default function SettingsScreen() {
   const [nameError, setNameError] = useState<string | null>(null);
   const [nameSaved, setNameSaved] = useState(false);
 
-  const [phoneNumber, setPhoneNumber] = useState(user?.user_metadata?.phone_number ?? '');
-  const [phoneSaving, setPhoneSaving] = useState(false);
-  const [phoneError, setPhoneError] = useState<string | null>(null);
-  const [phoneSaved, setPhoneSaved] = useState(false);
-
   const [swishNumber, setSwishNumber] = useState(user?.user_metadata?.swish_number ?? '');
   const [swishSaving, setSwishSaving] = useState(false);
   const [swishError, setSwishError] = useState<string | null>(null);
@@ -64,7 +59,6 @@ export default function SettingsScreen() {
   useEffect(() => {
     setAvatarUrl(user?.user_metadata?.avatar_url ?? null);
     setFullName(user?.user_metadata?.full_name ?? '');
-    setPhoneNumber(user?.user_metadata?.phone_number ?? '');
   }, [user]);
 
   useEffect(() => {
@@ -145,25 +139,6 @@ export default function SettingsScreen() {
       setNameError(error instanceof Error ? error.message : t('nameSaveError'));
     } finally {
       setNameSaving(false);
-    }
-  }
-
-  async function handleSavePhone() {
-    if (!user || phoneSaving) return;
-
-    setPhoneSaving(true);
-    setPhoneError(null);
-    setPhoneSaved(false);
-
-    try {
-      const { error } = await supabase.auth.updateUser({ data: { phone_number: phoneNumber.trim() } });
-
-      if (error) throw new Error(error.message);
-      setPhoneSaved(true);
-    } catch (error) {
-      setPhoneError(error instanceof Error ? error.message : t('phoneSaveError'));
-    } finally {
-      setPhoneSaving(false);
     }
   }
 
@@ -359,38 +334,6 @@ export default function SettingsScreen() {
                   </Pressable>
                 </View>
                 {nameError && <ThemedText style={styles.errorText}>{nameError}</ThemedText>}
-              </View>
-
-              <View style={styles.nameRow}>
-                <ThemedText type="smallBold" themeColor="textSecondary">
-                  {t('phoneNumberLabel')}
-                </ThemedText>
-                <View style={styles.nameInputRow}>
-                  <TextInput
-                    keyboardType="phone-pad"
-                    onChangeText={(text) => {
-                      setPhoneNumber(text.replace(/[^\d\s+-]/g, ''));
-                      setPhoneSaved(false);
-                    }}
-                    placeholder={t('phoneNumberPlaceholder')}
-                    placeholderTextColor={theme.textSecondary}
-                    style={[
-                      styles.input,
-                      styles.nameInput,
-                      { backgroundColor: theme.background, borderColor: theme.backgroundSelected, color: theme.text },
-                    ]}
-                    value={phoneNumber}
-                  />
-                  <Pressable
-                    disabled={phoneSaving}
-                    onPress={handleSavePhone}
-                    style={[styles.saveButton, { opacity: phoneSaving ? 0.55 : 1 }]}>
-                    <ThemedText style={styles.saveButtonText}>
-                      {phoneSaving ? t('savingLabel') : phoneSaved ? t('savedLabel') : t('saveNameButton')}
-                    </ThemedText>
-                  </Pressable>
-                </View>
-                {phoneError && <ThemedText style={styles.errorText}>{phoneError}</ThemedText>}
               </View>
 
               <View style={styles.nameRow}>
