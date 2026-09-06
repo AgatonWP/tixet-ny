@@ -35,6 +35,7 @@ function RootNavigator() {
         <Stack.Screen name="terms" />
         <Stack.Screen name="support" />
         <Stack.Screen name="admin" />
+        <Stack.Screen name="auth-redirect" />
       </Stack>
     </ThemeProvider>
   );

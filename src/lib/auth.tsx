@@ -58,7 +58,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           email,
           password,
           options: {
-            emailRedirectTo: Linking.createURL('/'),
+            emailRedirectTo: Linking.createURL('auth-redirect'),
             data: {
               full_name: profile?.fullName || undefined,
               phone_number: profile?.phoneNumber || undefined,

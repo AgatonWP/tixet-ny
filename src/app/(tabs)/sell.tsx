@@ -22,7 +22,7 @@ import { useTheme } from '@/hooks/use-theme';
 import { useAuth } from '@/lib/auth';
 import { useI18n } from '@/lib/i18n';
 import { supabase } from '@/lib/supabase';
-import { NATIONS_LIST, getNation } from '@/lib/nations';
+import { SELECTABLE_NATIONS_LIST, getNation } from '@/lib/nations';
 import {
   DealType,
   MORE_THAN_MAX_TICKET_QUANTITY,
@@ -566,7 +566,7 @@ export default function SellScreen() {
       <SimplePickerModal
         visible={nationPickerOpen}
         title={t('nationOrganizer')}
-        options={NATIONS_LIST.map((nation) => ({
+        options={SELECTABLE_NATIONS_LIST.map((nation) => ({
           id: nation.id,
           label: nation.name,
           searchTerms: [nation.shortName, ...nation.aliases],
@@ -651,7 +651,7 @@ export default function SellScreen() {
       <SimplePickerModal
         visible={wantedNationPickerOpen}
         title={t('nationOrganizer')}
-        options={NATIONS_LIST.map((nation) => ({
+        options={SELECTABLE_NATIONS_LIST.map((nation) => ({
           id: nation.id,
           label: nation.name,
           searchTerms: [nation.shortName, ...nation.aliases],

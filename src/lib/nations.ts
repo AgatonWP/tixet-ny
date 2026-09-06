@@ -39,6 +39,10 @@ export const NATIONS_LIST: Nation[] = [
   { id: 'other', name: 'Annat', shortName: '??', aliases: ['annat', 'annan', 'other', 'ovrigt', 'övrigt'], color: '#6B7280' },
 ];
 
+// Keep all known organizers available for existing listings and search, while
+// only exposing currently active choices when a user creates a listing.
+export const SELECTABLE_NATIONS_LIST = NATIONS_LIST.filter(({ id }) => id !== 'karneval');
+
 export function normalizeSearchText(value: string) {
   return value.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 }
